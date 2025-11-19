@@ -35,7 +35,7 @@ def split_col(column,s_o_l):
         first_laser = column.index(laser)
     except ValueError:
         return column, [], False
-    
+        
     ship_laser = (first_ship, first_laser)
     ships =  column[ :ship_laser[ s_c_d[s_o_l][0] ] + s_c_d[s_o_l][1]  ]
     lasers = column[  ship_laser[ s_c_d[s_o_l][0] ] + s_c_d[s_o_l][1]: ]
@@ -89,10 +89,10 @@ def player_moves_shoots(shot):
         
     if command == 's' and shot == False:
         """Shoot laser"""
-        if space_battle[player_pos % c_number][-2] in list(alien):
-            space_battle[player_pos % c_number][-2] = explosion
+        if space_battle[player_pos % col_number][-2] in list(alien):
+            space_battle[player_pos % col_number][-2] = explosion
         else:
-            space_battle[player_pos % c_number][-2] = laser
+            space_battle[player_pos % col_number][-2] = laser
             
         return True
     
@@ -137,29 +137,24 @@ def move(current_game, s_o_l):
     return new_game
 
 def mod(x):
-    return x%c_number
+    return x%col_number
 
-def rotate(column, reverse = False):
+def rotate(column, reverse = False, cycle = False):
+    rotate_dict = {
+        True:  { False: [column[-1]], True: [column[0]] }, 
+        False: { False: [''],       True:['']       }
+        }
+    
+    
     if reverse == False:
-        return [''] + column[:-1]
+        return rotate_dict[cycle][reverse] + column[:-1]
     if reverse == True:
-        return column[1:] + ['']  
+        return column[1:] + rotate_dict[cycle][reverse]  
 
 def find_ship(column):
     
     return max([index for index,char in enumerate(column) \
                 if char in alien and char != ''])
-
-def destroy_ships(current_game):
-    for chan_num, channel in enumerate(current_game[1:-1],1):
-        
-        for x in exes(channel):
-            
-            if current_game[chan_num-1][x]  == '<':
-                current_game[chan_num-1][x] = ''
-            if current_game[chan_num+1][x] == '>':
-                current_game[chan_num+1][x] = ''
-    return current_game
 
 def clear_debris(current_game):
     for chan_num, channel in enumerate(current_game):
@@ -177,8 +172,8 @@ def exes(collumn):
 
 def add_aliens(current_game, time, run_function):
         if run_function == True:
-            if math.sqrt(time)/(5*math.sqrt(tick_number)) > random.random():
-                new_ship_center = random.choice(list(range(1,c_number-1)))
+            if math.sqrt(time)/(spawn_pro*math.sqrt(spawn_mod)) > random.random():
+                new_ship_center = random.choice(list(range(1,col_number-1)))
     
                 s_l = len(alien)
                 
@@ -251,45 +246,47 @@ def refresh_menu(player_choice = None):
                       style = 'purple on white', justify='center')
     " Print buttons "
     console.print(Align.center(Columns(buttons, align='center', equal=True )))
+    console.print('Contols: \n\nw: move left, d: move right, s: shoot', 
+                  style = 'white on blue')
     
 def set_up_game():
     
    " game tick every 1.5 seconds "
    global game_tick_time
-   global tick_number
+   global spawn_mod
    global player_pos
    global transpose
    global colour
    global pad
    global width
    global space_battle
-   global c_number
+   global col_number
    global height
    global stars
    global player_score
    
    game_tick_time = 0.1
-   tick_number = 500
+   " spawn rate moderator  "
+   spawn_mod = 500
 
-   " Create base battlefield "
-
+   " Create base battlefield dimensions"
    height = 45
-   c_number = 20
-   width = 3*c_number
+   col_number = 20
+   width = 3*col_number
 
- 
-   stars = make_stars(c_number, height+1)
+   " Star background "
+   stars = make_stars(col_number, height+1)
+   " Transpose vector for printing "
    transpose = ['\n']*height + ['']
    
-   
+   " Initial player score and player position "
    player_score = 0
    player_pos = 0
 
+   " Creating inital game screen "
    space_battle = [['']*height + [player]]
-   for column in range(c_number-1):
+   for column in range(col_number-1):
        space_battle.append(['']*height+['  '])
-
-   space_battle = add_aliens(space_battle, 500, True)
     
 def make_stars(c_num, height):
     stars = []
@@ -314,40 +311,49 @@ def make_stars(c_num, height):
             
     return stars
 
+
 """ Dictionairies """
+
+" Dict for player movement "
 input_dict = {
     'a':-1,
     'd':1
     }
 
+" Dict for move function efficiency "
 move_dict = {
     'ship': [False,0,-1,1,0], 
     'laser':[True,1,0,0,-1]
     }
 
-
-
+" Dict for button colours "
 coloures_borders_dict = {'e': ['magenta','white','white'],
                'm': ['white','magenta','white'],
                'h': ['white','white','magenta'],
                None: ['white','white','white']}
 
-difficulty_dict = {'e': [5,1],'m': [3,1],'h':[2,1]}
+" Dict for difficulty option " 
+" [inverse ship speed, laser speed, shooting tick, spawn proportion] "
+difficulty_dict = {'e': [5,1,5,5],'m': [5,1,7,4],'h':[4,1,10,2]}
 
 player_options = [('e:','EASY  '),('m:','MEDIUM  '),('h:','HARD  ')]
 
-""" Player Menu """
+
 with console.screen():
+    """ Player Menu """
     refresh_menu()
+    
+    " Ask for difficulty setting and show selected option "
     difficulty_setting = ask_player_choice()
     refresh_menu(difficulty_setting)
     with console.status( '[purple]Setting up game', 
                          spinner = 'point' ):
         set_up_game()
-        sleep(4)
-        
-    s_s,l_s = difficulty_dict[difficulty_setting]
+        sleep(3)
+    " Assigning difficulty values "
+    s_s,l_s, shoot_tick, spawn_pro = difficulty_dict[difficulty_setting]
 
+" Dict for split_col function "
 s_c_d = {
     'ship': [1,0,s_s],
     'laser':[0,1,l_s]
@@ -357,18 +363,22 @@ with console.screen():
     """ Game loop """
     console.rule('[bold purple on white]Space Invaders', 
                  style = 'red', characters= '❌', align='center')   
-    with Live(update_visuals(space_battle), refresh_per_second=60) as Live:
+    with Live(update_visuals(space_battle), refresh_per_second=10) as Live:
 
+        " Timer for 'explosion cleanup' "
         timer = False
+        
         game_end = False
         tick = 0
+        
         while not(game_end):
+            " Loop until game ends "
         
             " start timer to clear debris and/or clear debris "
             timer,space_battle = timer_and_clean_debris(timer, space_battle) 
                 
             " Player can shoot once per 5 game ticks "
-            if tick%5 == 0:
+            if tick%shoot_tick == 0:
                 shot = False
             start_time = time.time()
         
@@ -384,7 +394,7 @@ with console.screen():
                 if tick % s_c_d[item][2] == 0:
                     space_battle, saved_battle = perform_changes(space_battle, 
                         [lambda x: move(x,item), 
-                         lambda x: add_aliens(x, tick,item == 'ship') ]
+                         lambda x: add_aliens(x, tick,item == 'ship')]
                         )    
                     if game_end == True:
                         break  
@@ -396,6 +406,7 @@ with console.screen():
 
           
 with console.screen():
+    " Player losing screen "
     console.print('\n\n\nYou lost!! You took out {} aliens though!'\
                   .format(player_score), justify='center')  
     sleep(5)      
