@@ -360,12 +360,18 @@ def refresh_menu(player_choice=None):
 
 
 def alien_dodge(current_game, run_function):
+    """ Make aliens strafe """
     if run_function == True:
+        " Only perform if needed "
 
+        " Transform game board into rows instead of columns "
         rows = [list(row) for row in list(zip(*current_game))]
+
         for index, row in enumerate(rows):
-            if random.random() < 0.3 and alien in row:
+            " Move aliens 30% of time "
+            if random.random() < 0.3 and alien in row and laser not in row:
                 if random.random() < 0.5:
+                    " Move left and right equally "
                     rows[index] = rotate(row, True)
                 else:
                     rows[index] = rotate(row)
