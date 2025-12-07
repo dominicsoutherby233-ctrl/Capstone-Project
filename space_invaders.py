@@ -51,25 +51,25 @@ except ModuleNotFoundError:
     os = 'MAC'
 
 
-def split_col(column, s_o_l):
-    " Splits column into alien portion and laser portion "
-    " If column only contains one of alien/laser, returns whole column "
-    try:
-        first_alien = find_alien(column)
-    except ValueError:
-        return [], column, False
-    try:
-        first_laser = column.index(laser)
-    except ValueError:
-        return column, [], False
+# def split_col(column, s_o_l):
+#     " Splits column into alien portion and laser portion "
+#     " If column only contains one of alien/laser, returns whole column "
+#     try:
+#         first_alien = find_alien(column)
+#     except ValueError:
+#         return [], column, False
+#     try:
+#         first_laser = column.index(laser)
+#     except ValueError:
+#         return column, [], False
 
-    alien_laser = (first_alien, first_laser)
-    aliens = column[:alien_laser[alien_laser_key[s_o_l][0]] +
-                    alien_laser_key[s_o_l][1]]
-    lasers = column[alien_laser[alien_laser_key[s_o_l][0]] +
-                    alien_laser_key[s_o_l][1]:]
+#     alien_laser = (first_alien, first_laser)
+#     aliens = column[:alien_laser[alien_laser_key[s_o_l][0]] +
+#                     alien_laser_key[s_o_l][1]]
+#     lasers = column[alien_laser[alien_laser_key[s_o_l][0]] +
+#                     alien_laser_key[s_o_l][1]:]
 
-    return aliens, lasers, True
+#     return aliens, lasers, True
 
 
 def update_visuals(new_battle):
@@ -136,87 +136,43 @@ def player_moves_shoots(shot):
     return shot
 
 
-# def move(current_game, s_o_l):
-#     """ Move ships or lasers depending on s_o_l (Ship Or Laser) """
-#     new_game = []
-#     for channel in current_game:
-#         temp_channel = channel[:-1]
-#         " Seperate column into ships and lasers portions using 'split_col' "
-#         " Also returns whether collision between laser and ship will occur "
-#         (ships, lasers, destroy) = split_col(temp_channel, s_o_l)
-
-#         w_column = (ships, lasers)
-#         " Key for code efficiency "
-#         key = move_dict[s_o_l]
-
-#         if (ships, lasers, destroy)[key[0]]:
-#             """ Performs code if there are ships or lasers in collumn """
-#             """ Whether checking for ships or lasers is decided by 's_o_l' """
-
-#             " Move ship section down or laser section up "
-#             rotating_column = (ships, lasers, destroy)[key[1]]
-#             rotating_column, removed = rotate(rotating_column, key[0]), \
-#                 (ships, lasers, destroy)[key[1]][key[2]]
-
-#             " Shows explosion if laser hits ship "
-#             if removed in list(alien) or (removed == laser and destroy):
-#                 try:
-#                     w_column[key[3]][key[4]] = explosion
-#                     global player_score
-#                     player_score += 1
-#                 except IndexError:
-#                     global game_end
-#                     game_end = True
-#                     return current_game
-
-#             " Order of concatenating depends on 's_o_l' "
-#             " Ships go first "
-#             if s_o_l == 'ship':
-#                 " 'rotating column' contains ships "
-#                 new_channel = rotating_column+lasers
-#             if s_o_l == 'laser':
-#                 " 'rotating column' contains lasers "
-#                 new_channel = ships+rotating_column
-
-#             " Add last character back. Either player or blank "
-#             new_channel = new_channel + [channel[-1]]
-
-#         else:
-#             new_channel = channel
-
-#         new_game.append(new_channel)
-#     return new_game
-
-
 """"""
 
 
 def move(current_game, s_o_l):
-    new_game = []
-    key = move_dict[s_o_l]
+    """ Move either aliens down or lasers up depending on 's_o_l' """
 
+    " Initiate new game board "
+    new_game = []
+    " Key for code efficiency "
+    key = move_dict[s_o_l]
+    " Retrieving alien or laser emoji "
     s_o_l_emoji = emoji_dict[s_o_l]
 
     for channel in current_game:
-        " Check for game ending "
+        " Check for game ending and stop function if so "
         if channel[-2] == alien and s_o_l == 'alien':
             global game_end
             game_end = True
             return current_game
 
+        " Remove player 'row' for simplicity "
         temp_channel = channel[:-1]
+        " Initiate new game channel "
         new_channel = []
+        " Separate aliens/lasers from game channel "
         for index, char in enumerate(temp_channel):
             if char in (s_o_l_emoji, ''):
                 new_channel.append(temp_channel[index])
             else:
                 new_channel.append('')
+        " Move aliens 'down' or lasers 'up' "
         new_channel = rotate(new_channel, key[0])
-
+        " Zip rotated column and initial column to compare "
         zip_col = zip(new_channel, temp_channel)
-
+        " Turn zip object into list "
         joined_column = list(zip_col)
-
+        " Create new channel "
         new_channel = create_col(
             joined_column, not_sol(s_o_l_emoji)) + [channel[-1]]
 
@@ -225,17 +181,23 @@ def move(current_game, s_o_l):
 
 
 def create_col(zip_column, s_o_l):
+    """ Compares rotated channel and initial and returns correct result """
     new_col = []
     for entry in zip_column:
+        " Entry is in form ('rotated column entry', 'initial column entry ') "
         if set(entry) == {alien, laser}:
+            " Alien and laser have 'collided' so replace with 'explosion' emoji and increase player score "
             new_col.append(explosion)
             global player_score
             player_score += 1
         elif s_o_l in entry:
+            " Keep emoji that isn't being rotated in new column if it hasn't collided "
             new_col.append(s_o_l)
         elif set(entry) == {explosion, ''}:
+            " Keep existing 'explosion' emojis in column "
             new_col.append(explosion)
         else:
+            " Append default rotated column entry "
             new_col.append(entry[0])
 
     return new_col
@@ -255,6 +217,7 @@ def rotate(column, reverse=False, cycle=False):
 
 
 def not_sol(s_o_l):
+    " Returns opposite emoji that is being moved in function 'move()' "
     if s_o_l == laser:
         return alien
     else:
@@ -281,10 +244,10 @@ def rotate(column, reverse=False, cycle=False):
         return column[1:] + rotate_dict[cycle][reverse]
 
 
-def find_alien(column):
-    """ Finds last instance of ship in game column """
-    return max([index for index, char in enumerate(column)
-                if char in alien and char != ''])
+# def find_alien(column):
+#     """ Finds last instance of ship in game column """
+#     return max([index for index, char in enumerate(column)
+#                 if char in alien and char != ''])
 
 
 def clear_debris(current_game):
@@ -331,7 +294,7 @@ def perform_changes(space_battle, functions):
 def timer_and_clean_debris(timer, space_battle):
     """ Clean explosion emojis after certain amount of time """
     if not timer:
-        " keep track of debris cleanup putside of function "
+        " keep track of debris cleanup outside of function "
         global debris_cleanup
         debris_cleanup = time.time() + 1.5
         timer = True
@@ -411,6 +374,7 @@ def alien_dodge(current_game, run_function):
 
 
 def set_up_game():
+    """ Initiate all values needed for game """
     " game tick every 1.5 seconds "
     global game_tick_time
     global spawn_mod
