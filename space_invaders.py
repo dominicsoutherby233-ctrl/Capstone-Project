@@ -7,10 +7,11 @@ Created on Mon Nov 10 11:10:41 2025
 from rich.console import Console
 from rich.columns import Columns
 from rich.panel import Panel
-import readchar
+
 import math
 from time import sleep
 import time
+import readchar
 import random
 from rich.live import Live
 from rich.align import Align
